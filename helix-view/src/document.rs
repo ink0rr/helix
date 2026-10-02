@@ -55,7 +55,6 @@ use crate::{
 const BUF_SIZE: usize = 8192;
 
 const DEFAULT_INDENT: IndentStyle = IndentStyle::Tabs;
-const DEFAULT_TAB_WIDTH: usize = 4;
 
 pub const DEFAULT_LANGUAGE_NAME: &str = "text";
 
@@ -988,7 +987,7 @@ impl Document {
         let request = language_server.text_document_formatting(
             self.identifier(),
             lsp::FormattingOptions {
-                tab_size: self.tab_width() as u32,
+                tab_size: self.indent_width() as u32,
                 insert_spaces: matches!(self.indent_style, IndentStyle::Spaces(_)),
                 ..Default::default()
             },
@@ -2057,11 +2056,7 @@ impl Document {
         self.editor_config
             .tab_width
             .map(|n| n.get() as usize)
-            .unwrap_or_else(|| {
-                self.language_config()
-                    .and_then(|config| config.indent.as_ref())
-                    .map_or(DEFAULT_TAB_WIDTH, |config| config.tab_width)
-            })
+            .unwrap_or_else(|| self.config.load().tab_width)
     }
 
     // The width (in spaces) of a level of indentation.

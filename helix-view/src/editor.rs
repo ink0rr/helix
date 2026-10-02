@@ -413,6 +413,9 @@ pub struct Config {
     /// Which indent heuristic to use when a new line is inserted
     #[serde(default)]
     pub indent_heuristic: IndentationHeuristic,
+    /// Number of columns a tab character is rendered as. Defaults to 4.
+    #[serde(deserialize_with = "helix_core::syntax::config::deserialize_tab_width")]
+    pub tab_width: usize,
     /// labels characters used in jumpmode
     #[serde(
         serialize_with = "serialize_alphabet",
@@ -1234,6 +1237,7 @@ impl Default for Config {
             smart_tab: Some(SmartTabConfig::default()),
             popup_border: PopupBorderConfig::None,
             indent_heuristic: IndentationHeuristic::default(),
+            tab_width: 4,
             jump_label_alphabet: ('a'..='z').collect(),
             inline_diagnostics: InlineDiagnosticsConfig::default(),
             end_of_line_diagnostics: DiagnosticFilter::Enable(Severity::Hint),

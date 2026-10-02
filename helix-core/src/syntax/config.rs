@@ -528,8 +528,6 @@ pub struct DebuggerQuirks {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct IndentationConfiguration {
-    #[serde(deserialize_with = "deserialize_tab_width")]
-    pub tab_width: usize,
     pub unit: String,
 }
 
@@ -647,7 +645,7 @@ where
         .transpose()
 }
 
-fn deserialize_tab_width<'de, D>(deserializer: D) -> Result<usize, D::Error>
+pub fn deserialize_tab_width<'de, D>(deserializer: D) -> Result<usize, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
