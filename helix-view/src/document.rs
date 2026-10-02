@@ -220,6 +220,8 @@ pub struct Document {
     pub color_swatches: Option<DocumentColorSwatches>,
     /// Cached LSP document links for navigation (e.g. goto_file).
     pub document_links: Vec<DocumentLink>,
+    /// LSP semantic tokens, layered over tree-sitter highlights.
+    pub semantic_tokens: SemanticTokens,
     // NOTE: ideally this would live on the handler for color swatches. This is blocked on a
     // large refactor that would make `&mut Editor` available on the `DocumentDidChange` event.
     pub color_swatch_controller: TaskController,
@@ -229,6 +231,7 @@ pub struct Document {
     pub code_action_controllers: HashMap<ViewId, TaskController>,
     pub pull_diagnostic_controller: TaskController,
     pub document_link_controller: TaskController,
+    pub semantic_tokens_controller: TaskController,
 
     // NOTE: this field should eventually go away - we should use the Editor's syn_loader instead
     // of storing a copy on every doc. Then we can remove the surrounding `Arc` and use the
@@ -256,6 +259,34 @@ pub struct DocumentLink {
     pub end: usize,
     pub link: lsp::DocumentLink,
     pub language_server_id: LanguageServerId,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct SemanticTokens {
+    /// `lsp.type.<name>` theme scope for each token type in the server's legend.
+    pub type_scopes: Vec<String>,
+    /// `lsp.mod.<name>` theme scope for each token modifier in the server's legend.
+    pub modifier_scopes: Vec<String>,
+    /// Sorted and non-overlapping.
+    pub tokens: Vec<SemanticToken>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SemanticToken {
+    /// Character offsets in the document for the token range.
+    pub start: usize,
+    pub end: usize,
+    /// Index into [`SemanticTokens::type_scopes`].
+    pub token_type: u32,
+    /// Bitset over [`SemanticTokens::modifier_scopes`].
+    pub modifiers: u32,
+    /// Standard scope used when neither the theme's `lsp.type.<name>` scope nor a language
+    /// `semantic-token-rules` color applies.
+    pub scope: Option<&'static str>,
+    /// Foreground from the language's `semantic-token-rules` (an RGB `Highlight`).
+    pub rule_fg: Option<syntax::Highlight>,
+    /// Modifiers from the language's `semantic-token-rules` (a modifier `Highlight`).
+    pub rule_modifiers: Option<syntax::Highlight>,
 }
 
 /// Inlay hints for a single `(Document, View)` combo.
@@ -776,6 +807,8 @@ impl Document {
             previous_diagnostic_ids: HashMap::new(),
             pull_diagnostic_controller: TaskController::new(),
             document_link_controller: TaskController::new(),
+            semantic_tokens: SemanticTokens::default(),
+            semantic_tokens_controller: TaskController::new(),
         }
     }
 

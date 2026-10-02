@@ -29,6 +29,7 @@ keys are listed below.
 | Document / workspace symbols | `Space-s` / `Space-S` |
 | Format document | `:format`, or set `auto-format` to format on save |
 | Inlay hints | enable with `display-inlay-hints` (see below) |
+| Semantic tokens, layered over tree-sitter highlighting | enable with `semantic-tokens` (see below) |
 
 ## Configuration
 

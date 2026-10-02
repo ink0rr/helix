@@ -106,6 +106,23 @@ pub struct LanguageConfiguration {
     pub persistent_diagnostic_sources: Vec<String>,
     /// Overrides the `editor.rainbow-brackets` config key for the language.
     pub rainbow_brackets: Option<bool>,
+    /// Styles for LSP semantic tokens, applied in order (later rules win).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub semantic_token_rules: Vec<SemanticTokenRule>,
+}
+
+/// Styles tokens matching `token-type` (any type if unset) that have all of `token-modifiers`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct SemanticTokenRule {
+    pub token_type: Option<String>,
+    #[serde(default)]
+    pub token_modifiers: Vec<String>,
+    /// Hex foreground color, e.g. `#54FF54`.
+    pub fg: Option<String>,
+    /// Style modifiers, as in themes: `bold`, `italic`, `crossed_out`, ...
+    #[serde(default)]
+    pub modifiers: Vec<String>,
 }
 
 impl LanguageConfiguration {
@@ -324,6 +341,7 @@ pub enum LanguageServerFeature {
     InlayHints,
     DocumentColors,
     CallHierarchy,
+    SemanticTokens,
 }
 
 impl Display for LanguageServerFeature {
@@ -351,6 +369,7 @@ impl Display for LanguageServerFeature {
             InlayHints => "inlay-hints",
             DocumentColors => "document-colors",
             CallHierarchy => "call-hierarchy",
+            SemanticTokens => "semantic-tokens",
         };
         write!(f, "{feature}",)
     }

@@ -76,6 +76,25 @@ These configuration keys are available:
 | `persistent-diagnostic-sources` | An array of LSP diagnostic sources assumed unchanged when the language server resends the same set of diagnostics. Helix can track the position for these diagnostics internally instead. Useful for diagnostics that are recomputed on save.
 | `rainbow-brackets` | Overrides the `editor.rainbow-brackets` config key for the language |
 | `code-actions-on-save`    | List of LSP code actions to be run in order on save, for example `["source.organizeImports"]` |
+| `semantic-token-rules` | Styles for LSP semantic tokens (see [below](#semantic-token-rules)) |
+
+### Semantic token rules
+
+With [`semantic-tokens`](./editor.md#editorlsp-section) enabled, a language can style its server's
+semantic tokens, including non-standard token types, independent of the theme. Each rule matches
+tokens of `token-type` (any type if omitted) that carry all of `token-modifiers`, and applies a hex
+`fg` color and/or theme `modifiers`. All matching rules apply in order; later rules win. A theme's
+`lsp.type.<type>` scope takes precedence over a rule's `fg`.
+
+```toml
+[[language]]
+name = "lang"
+semantic-token-rules = [
+  { token-type = "colorGreen", fg = "#54FF54" },
+  { token-modifiers = ["bold"], modifiers = ["bold"] },
+  { token-modifiers = ["obfuscated"], modifiers = ["crossed_out"] },
+]
+```
 
 ## Project and LSP root selection
 
@@ -265,6 +284,7 @@ The list of supported features is:
 - `inlay-hints`
 - `document-colors`
 - `call-hierarchy`
+- `semantic-tokens`
 
 ## Tree-sitter grammar configuration
 

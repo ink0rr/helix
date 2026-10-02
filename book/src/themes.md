@@ -289,6 +289,20 @@ See also [#2380]
 
 - `embedded` - Interpolated expressions embedded in a string template (`${…}`)
 
+#### LSP semantic tokens
+
+With [`semantic-tokens`](./editor.md#editorlsp-section) enabled, tokens use the standard
+scopes above (e.g. a `parameter` token uses `variable.parameter`). Themes can also style
+tokens by their raw LSP names, including server-specific ones:
+
+- `lsp.type.<type>` - token type, e.g. `lsp.type.parameter`; takes precedence over the standard scope
+- `lsp.mod.<modifier>` - token modifier, e.g. `lsp.mod.deprecated`; layered on top of the type style
+
+```toml
+"lsp.type.colorGreen" = "#55ff55"
+"lsp.mod.bold" = { modifiers = ["bold"] }
+```
+
 #### Interface
 
 These scopes are used for theming the editor interface:

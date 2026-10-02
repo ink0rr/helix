@@ -14,6 +14,7 @@ pub use helix_view::handlers::{word_index, Handlers};
 
 use self::document_colors::DocumentColorsHandler;
 use self::document_links::DocumentLinksHandler;
+use self::semantic_tokens::SemanticTokensHandler;
 
 mod auto_save;
 mod code_action_hint;
@@ -24,6 +25,7 @@ mod document_highlight;
 mod document_links;
 mod prompt;
 mod signature_help;
+pub mod semantic_tokens;
 mod snippet;
 mod workspace_trust;
 
@@ -36,6 +38,7 @@ pub fn setup(config: Arc<ArcSwap<Config>>) -> Handlers {
     let code_action_hint = code_action_hint::Handler::default().spawn();
     let document_colors = DocumentColorsHandler::default().spawn();
     let document_links = DocumentLinksHandler::default().spawn();
+    let semantic_tokens = SemanticTokensHandler::default().spawn();
     let word_index = word_index::Handler::spawn();
     let pull_diagnostics = PullDiagnosticsHandler::default().spawn();
     let pull_all_documents_diagnostics = PullAllDocumentsDiagnosticHandler::default().spawn();
@@ -46,6 +49,7 @@ pub fn setup(config: Arc<ArcSwap<Config>>) -> Handlers {
         auto_save,
         document_colors,
         document_links,
+        semantic_tokens,
         word_index,
         pull_diagnostics,
         pull_all_documents_diagnostics,
@@ -62,6 +66,7 @@ pub fn setup(config: Arc<ArcSwap<Config>>) -> Handlers {
     snippet::register_hooks(&handlers);
     document_colors::register_hooks(&handlers);
     document_links::register_hooks(&handlers);
+    semantic_tokens::register_hooks(&handlers);
     prompt::register_hooks(&handlers);
     workspace_trust::register_hooks(&handlers);
     handlers

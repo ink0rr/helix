@@ -127,6 +127,14 @@ impl EditorView {
             &text_annotations,
         ));
 
+        Self::doc_semantic_token_highlights_into(
+            doc,
+            view_offset.anchor,
+            inner.height,
+            theme,
+            &mut overlays,
+        );
+
         if doc
             .language_config()
             .and_then(|config| config.rainbow_brackets)
@@ -323,6 +331,79 @@ impl EditorView {
         range = text.byte_to_char(range.start)..text.byte_to_char(range.end);
 
         text_annotations.collect_overlay_highlights(range)
+    }
+
+    /// LSP semantic tokens in the viewport, patched over tree-sitter highlights. A token is colored
+    /// by the theme's `lsp.type.<name>`, else the language's `semantic-token-rules`, else its
+    /// standard scope; tokens with none of these keep the tree-sitter highlight. Rule modifiers
+    /// and each `lsp.mod.<name>` the theme defines are layered on top.
+    pub fn doc_semantic_token_highlights_into(
+        doc: &Document,
+        anchor: usize,
+        height: u16,
+        theme: &Theme,
+        overlays: &mut Vec<OverlayHighlights>,
+    ) {
+        let semantic_tokens = &doc.semantic_tokens;
+        if semantic_tokens.tokens.is_empty() {
+            return;
+        }
+        let text = doc.text().slice(..);
+        let row = text.char_to_line(anchor.min(text.len_chars()));
+        let range = Self::viewport_byte_range(text, row, height);
+        let range = text.byte_to_char(range.start)..text.byte_to_char(range.end);
+
+        let first = semantic_tokens
+            .tokens
+            .partition_point(|token| token.end <= range.start);
+        let visible = || {
+            semantic_tokens.tokens[first..]
+                .iter()
+                .take_while(|token| token.start < range.end)
+                .filter(|token| token.start < token.end)
+        };
+
+        let type_highlights: Vec<_> = semantic_tokens
+            .type_scopes
+            .iter()
+            .map(|scope| theme.find_highlight_exact(scope))
+            .collect();
+        let highlights: Vec<_> = visible()
+            .filter_map(|token| {
+                let highlight = type_highlights
+                    .get(token.token_type as usize)
+                    .copied()
+                    .flatten()
+                    .or(token.rule_fg)
+                    .or_else(|| theme.find_highlight(token.scope?))?;
+                Some((highlight, token.start..token.end))
+            })
+            .collect();
+        if !highlights.is_empty() {
+            overlays.push(OverlayHighlights::Heterogenous { highlights });
+        }
+
+        let rule_modifiers: Vec<_> = visible()
+            .filter_map(|token| Some((token.rule_modifiers?, token.start..token.end)))
+            .collect();
+        if !rule_modifiers.is_empty() {
+            overlays.push(OverlayHighlights::Heterogenous {
+                highlights: rule_modifiers,
+            });
+        }
+
+        for (i, scope) in semantic_tokens.modifier_scopes.iter().enumerate() {
+            let Some(highlight) = theme.find_highlight_exact(scope) else {
+                continue;
+            };
+            let ranges: Vec<_> = visible()
+                .filter(|token| token.modifiers & (1 << i) != 0)
+                .map(|token| token.start..token.end)
+                .collect();
+            if !ranges.is_empty() {
+                overlays.push(OverlayHighlights::Homogeneous { highlight, ranges });
+            }
+        }
     }
 
     pub fn doc_rainbow_highlights(

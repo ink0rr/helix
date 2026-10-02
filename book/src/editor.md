@@ -173,6 +173,7 @@ The following statusline elements can be configured:
 | `display-inlay-hints` | Display inlay hints[^2]                                     | `false` |
 | `inlay-hints-length-limit` | Maximum displayed length (non-zero number) of inlay hints | Unset by default  |
 | `display-color-swatches` | Show color swatches next to colors | `true` |
+| `semantic-tokens` | Layer LSP semantic tokens on top of tree-sitter highlighting. Tokens use the standard syntax scopes, or `lsp.type.<type>` / `lsp.mod.<modifier>` theme scopes (see [themes](./themes.md#lsp-semantic-tokens)); tree-sitter highlighting is kept where the server sends no token or the theme can't style it | `false` |
 | `display-signature-help-docs` | Display docs under signature help popup             | `true`  |
 | `snippets`      | Enables snippet completions. Requires a server restart (`:lsp-restart`) to take effect after `:config-reload`/`:set`. | `true`  |
 | `goto-reference-include-declaration` | Include declaration in the goto references popup. | `true`  |

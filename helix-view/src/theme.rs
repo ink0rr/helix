@@ -405,10 +405,26 @@ impl Theme {
         Highlight::new(u32::from_le_bytes([b, g, r, u8::MAX]) - 1)
     }
 
+    /// Like RGB highlights, the 2^16 numbers just below them encode a [`Modifier`] set.
+    const MODIFIER_START: u32 = Self::RGB_START - u16::MAX as u32;
+
+    fn decode_modifier_highlight(highlight: Highlight) -> Option<Modifier> {
+        (Self::MODIFIER_START..=Self::RGB_START)
+            .contains(&highlight.get())
+            .then(|| Modifier::from_bits_truncate((highlight.get() - Self::MODIFIER_START) as u16))
+    }
+
+    /// Create a Highlight that adds the given modifiers
+    pub fn modifier_highlight(modifier: Modifier) -> Highlight {
+        Highlight::new(Self::MODIFIER_START + modifier.bits() as u32)
+    }
+
     #[inline]
     pub fn highlight(&self, highlight: Highlight) -> Style {
         if let Some((red, green, blue)) = Self::decode_rgb_highlight(highlight) {
             Style::new().fg(Color::Rgb(red, green, blue))
+        } else if let Some(modifier) = Self::decode_modifier_highlight(highlight) {
+            Style::new().add_modifier(modifier)
         } else {
             self.highlights[highlight.idx()]
         }
@@ -758,9 +774,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "index out of bounds: the len is 0 but the index is 4278190078")]
+    #[should_panic(expected = "index out of bounds: the len is 0 but the index is 4278124542")]
     fn out_of_bounds() {
-        let highlight = Highlight::new(Theme::rgb_highlight(0, 0, 0).get() - 1);
+        let highlight = Highlight::new(Theme::modifier_highlight(Modifier::empty()).get() - 1);
         Theme::default().highlight(highlight);
     }
 }
