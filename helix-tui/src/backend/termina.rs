@@ -15,7 +15,11 @@ use termina::{
     Event, OneBased, PlatformTerminal, Terminal as _, WindowSize,
 };
 
-use crate::{buffer::Cell, terminal::Config};
+use crate::{
+    buffer::Cell,
+    image::{self, Image},
+    terminal::Config,
+};
 
 use super::Backend;
 
@@ -47,6 +51,47 @@ fn vte_version() -> Option<usize> {
     std::env::var("VTE_VERSION").ok()?.parse().ok()
 }
 
+/// Whether the primary device attributes include sixel graphics (attribute 4).
+///
+/// termina doesn't expose the attributes so this reads the response from the tty directly. The
+/// terminal must be in raw mode and termina must not be reading the input yet.
+fn query_sixel_support() -> io::Result<bool> {
+    use rustix::event::{poll, PollFd, PollFlags, Timespec};
+    use std::{
+        io::Read as _,
+        time::{Duration, Instant},
+    };
+
+    let mut tty = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/tty")?;
+    tty.write_all(b"\x1b[c")?;
+    let deadline = Instant::now() + Duration::from_millis(100);
+    let mut response = Vec::new();
+    // Response: CSI ? attr1 ; ... ; attrn c
+    while !response.ends_with(b"c") {
+        let timeout = Timespec::try_from(deadline.saturating_duration_since(Instant::now()))
+            .map_err(io::Error::other)?;
+        let mut fds = [PollFd::new(&tty, PollFlags::IN)];
+        if poll(&mut fds, Some(&timeout))? == 0 {
+            return Ok(false);
+        }
+        let mut buf = [0; 64];
+        let n = tty.read(&mut buf)?;
+        if n == 0 {
+            return Ok(false);
+        }
+        response.extend_from_slice(&buf[..n]);
+    }
+    let Some(start) = response.windows(3).rposition(|w| w == b"\x1b[?") else {
+        return Ok(false);
+    };
+    Ok(response[start + 3..response.len() - 1]
+        .split(|&b| b == b';')
+        .any(|attr| attr == b"4"))
+}
+
 #[derive(Debug, Default, Clone, Copy)]
 struct Capabilities {
     kitty_keyboard: KittyKeyboardSupport,
@@ -56,6 +101,8 @@ struct Capabilities {
     /// OSC11 / OSC111 - change the terminal's background color.
     dynamic_background_color: bool,
     theme_mode: Option<theme::Mode>,
+    /// Sixel graphics: attribute 4 in the primary device attributes.
+    sixel: bool,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -84,6 +131,8 @@ pub struct TerminaBackend {
     /// The terminal emulator's background color. This is queried when claiming the terminal so
     /// that custom colors set outside of Helix with OSC11 are restored when Helix exits.
     original_background_color: Option<RgbColor>,
+    /// Escape sequences of the last drawn images with the cell size they were encoded for.
+    image_cache: Vec<(Image, (u32, u32), String)>,
 }
 
 impl TerminaBackend {
@@ -100,6 +149,11 @@ impl TerminaBackend {
         let mut capabilities = Capabilities::default();
         let mut original_background_color = None;
         let start = Instant::now();
+
+        capabilities.sixel = query_sixel_support().unwrap_or_else(|err| {
+            log::debug!("Failed to query sixel support: {err}");
+            false
+        });
 
         // HACK: emitting OSC11 / OSC111 seems to break SGR and cause flickering in tmux.
         capabilities.dynamic_background_color = std::env::var_os("TMUX").is_none();
@@ -196,6 +250,7 @@ impl TerminaBackend {
         }
 
         capabilities.extended_underlines |= config.force_enable_extended_underlines;
+        image::set_protocol(config.image_protocol, capabilities.sixel);
 
         let mut reset_cursor_command = String::new();
         if let Ok(t) = termini::TermInfo::from_env() {
@@ -255,6 +310,7 @@ impl TerminaBackend {
             is_synchronized_output_set: false,
             background_color: None,
             original_background_color,
+            image_cache: Vec::new(),
         })
     }
 
@@ -448,6 +504,12 @@ impl Backend for TerminaBackend {
             }
         }
         self.capabilities.extended_underlines |= self.config.force_enable_extended_underlines;
+        if image::protocol() == Some(image::Protocol::Kitty) {
+            write!(self.terminal, "{}", image::KITTY_DELETE_ALL)?;
+        }
+        image::set_protocol(self.config.image_protocol, self.capabilities.sixel);
+        // Cached sequences are protocol specific.
+        self.image_cache.clear();
         Ok(())
     }
 
@@ -551,6 +613,45 @@ impl Backend for TerminaBackend {
 
         write!(self.terminal, "{}", Csi::Sgr(csi::Sgr::Reset))?;
 
+        Ok(())
+    }
+
+    fn draw_images(&mut self, images: &[Image]) -> io::Result<()> {
+        let Some(protocol) = image::protocol() else {
+            return Ok(());
+        };
+        if protocol == image::Protocol::Kitty {
+            write!(self.terminal, "{}", image::KITTY_DELETE_ALL)?;
+        }
+        if images.is_empty() {
+            self.image_cache.clear();
+            return Ok(());
+        }
+
+        let size = self.terminal.get_dimensions()?;
+        let cell = size
+            .pixel_width
+            .zip(size.pixel_height)
+            .filter(|_| size.cols > 0 && size.rows > 0)
+            .map(|(width, height)| ((width / size.cols) as u32, (height / size.rows) as u32))
+            .filter(|&(width, height)| width > 0 && height > 0)
+            // ponytail: guessed cell size when the terminal doesn't report pixels; query
+            // CSI 16 t if sixel images end up misplaced.
+            .unwrap_or((8, 16));
+        let mut cache = Vec::with_capacity(images.len());
+        for image in images {
+            let sequence = match self
+                .image_cache
+                .iter()
+                .position(|(cached, cached_cell, _)| cached == image && *cached_cell == cell)
+            {
+                Some(i) => self.image_cache.swap_remove(i).2,
+                None => image::encode(protocol, image, cell),
+            };
+            self.terminal.write_all(sequence.as_bytes())?;
+            cache.push((image.clone(), cell, sequence));
+        }
+        self.image_cache = cache;
         Ok(())
     }
 

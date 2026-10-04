@@ -2,7 +2,7 @@
 
 use std::io;
 
-use crate::{buffer::Cell, terminal::Config};
+use crate::{buffer::Cell, image::Image, terminal::Config};
 
 use helix_view::{
     graphics::{CursorKind, Rect},
@@ -34,6 +34,10 @@ pub trait Backend {
     fn draw<'a, I>(&mut self, content: I) -> Result<(), io::Error>
     where
         I: Iterator<Item = (u16, u16, &'a Cell)>;
+    /// Draws `images` over the cells, replacing previously drawn images.
+    fn draw_images(&mut self, _images: &[Image]) -> Result<(), io::Error> {
+        Ok(())
+    }
     /// Hides the cursor
     fn hide_cursor(&mut self) -> Result<(), io::Error>;
     /// Sets the cursor to the given shape

@@ -21,6 +21,7 @@ use thiserror::Error;
 use tokio::sync::mpsc::Sender;
 use tui::{
     buffer::Buffer as Surface,
+    image::{self, Image, RgbaImage},
     layout::Constraint,
     text::{Span, Spans},
     widgets::{Block, BorderType, Cell, Row, Table},
@@ -86,6 +87,7 @@ pub type FileLocation<'a> = (PathOrId<'a>, Option<(usize, usize)>);
 pub enum CachedPreview {
     Document(Box<Document>),
     Directory(Vec<(String, bool)>),
+    Image(Arc<RgbaImage>),
     Binary,
     LargeFile,
     NotFound,
@@ -121,6 +123,7 @@ impl Preview<'_, '_> {
             Self::Cached(preview) => match preview {
                 CachedPreview::Document(_) => "<Invalid file location>",
                 CachedPreview::Directory(_) => "<Invalid directory location>",
+                CachedPreview::Image(_) => "<Image>",
                 CachedPreview::Binary => "<Binary file>",
                 CachedPreview::LargeFile => "<File too large to preview>",
                 CachedPreview::NotFound => "<File not found>",
@@ -631,6 +634,11 @@ impl<T: 'static + Send + Sync, D: 'static + Send + Sync> Picker<T, D> {
                             if metadata.len() > MAX_FILE_SIZE_FOR_PREVIEW {
                                 return Ok(CachedPreview::LargeFile);
                             }
+                            if image::protocol().is_some() {
+                                if let Some(pixels) = image::load(&path) {
+                                    return Ok(CachedPreview::Image(Arc::new(pixels)));
+                                }
+                            }
                             let is_binary = std::fs::File::open(&path).and_then(|file| {
                                 // Read up to 1kb to detect the content type
                                 let n = file.take(1024).read_to_end(&mut self.read_buffer)?;
@@ -906,6 +914,15 @@ impl<T: 'static + Send + Sync, D: 'static + Send + Sync> Picker<T, D> {
                     doc
                 }
                 _ => {
+                    if let (Preview::Cached(CachedPreview::Image(pixels)), Some(_)) =
+                        (&preview, image::protocol())
+                    {
+                        surface.images.push(Image {
+                            area: inner,
+                            pixels: pixels.clone(),
+                        });
+                        return;
+                    }
                     if let Some(dir_content) = preview.dir_content() {
                         for (i, (path, is_dir)) in
                             dir_content.iter().take(inner.height as usize).enumerate()

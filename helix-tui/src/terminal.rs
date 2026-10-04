@@ -2,7 +2,7 @@
 //! Frontend for [Backend]
 
 use crate::{backend::Backend, buffer::Buffer};
-use helix_view::editor::{Config as EditorConfig, KittyKeyboardProtocolConfig};
+use helix_view::editor::{Config as EditorConfig, ImageProtocolConfig, KittyKeyboardProtocolConfig};
 use helix_view::graphics::{CursorKind, Rect};
 use std::io;
 
@@ -26,6 +26,7 @@ pub struct Config {
     pub enable_mouse_capture: bool,
     pub force_enable_extended_underlines: bool,
     pub kitty_keyboard_protocol: KittyKeyboardProtocolConfig,
+    pub image_protocol: ImageProtocolConfig,
 }
 
 impl From<&EditorConfig> for Config {
@@ -34,6 +35,7 @@ impl From<&EditorConfig> for Config {
             enable_mouse_capture: config.mouse,
             force_enable_extended_underlines: config.undercurl,
             kitty_keyboard_protocol: config.kitty_keyboard_protocol,
+            image_protocol: config.image_protocol,
         }
     }
 }
@@ -159,8 +161,37 @@ where
         }
         let previous_buffer = &self.buffers[1 - self.current];
         let current_buffer = &self.buffers[self.current];
-        let updates = previous_buffer.diff(current_buffer);
-        self.backend.draw(updates.into_iter())
+        let mut updates = previous_buffer.diff(current_buffer);
+
+        let images_changed = previous_buffer.images != current_buffer.images;
+        if images_changed {
+            // Sixel pixels stay on screen until overwritten: repaint the cells under old images.
+            for image in &previous_buffer.images {
+                for y in image.area.top()..image.area.bottom() {
+                    let mut x = image.area.left();
+                    while x < image.area.right() {
+                        let cell = &current_buffer[(x, y)];
+                        updates.push((x, y, cell));
+                        // Skip the cells covered by wide characters.
+                        x += (cell.width() as u16).max(1);
+                    }
+                }
+            }
+        }
+        // Cells drawn over an image erase (part of) it.
+        let redraw_images = images_changed
+            || updates.iter().any(|&(x, y, _)| {
+                current_buffer.images.iter().any(|image| {
+                    (image.area.left()..image.area.right()).contains(&x)
+                        && (image.area.top()..image.area.bottom()).contains(&y)
+                })
+            });
+
+        self.backend.draw(updates.into_iter())?;
+        if redraw_images {
+            self.backend.draw_images(&current_buffer.images)?;
+        }
+        Ok(())
     }
 
     /// Updates the Terminal so that internal buffers match the requested size. Requested size will
