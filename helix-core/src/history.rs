@@ -134,6 +134,14 @@ impl History {
         down_txns.chain(up_txns).reduce(|acc, tx| tx.compose(acc))
     }
 
+    /// The transactions leading from the root to the current revision, in order.
+    pub fn path_from_root(&self) -> impl Iterator<Item = &Transaction> {
+        self.path_up(self.current, 0)
+            .into_iter()
+            .rev()
+            .map(|n| &self.revisions[n].transaction)
+    }
+
     /// Undo the last edit.
     pub fn undo(&mut self) -> Option<&Transaction> {
         if self.at_root() {

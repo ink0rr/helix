@@ -382,6 +382,10 @@ fn write_impl(
     path: Option<&str>,
     options: WriteOptions,
 ) -> anyhow::Result<()> {
+    if doc!(cx.editor).explorer.is_some() {
+        explorer::write(cx);
+        return Ok(());
+    }
     let config = cx.editor.config();
     let (view, doc) = current!(cx.editor);
     let doc_id = doc.id();
@@ -1587,6 +1591,10 @@ fn get_character_info(
 /// Reload the [`Document`] from its source file.
 fn reload(cx: &mut compositor::Context, _args: Args, event: PromptEvent) -> anyhow::Result<()> {
     if event != PromptEvent::Validate {
+        return Ok(());
+    }
+    if doc!(cx.editor).explorer.is_some() {
+        explorer::reload(cx.editor);
         return Ok(());
     }
 

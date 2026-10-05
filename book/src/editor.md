@@ -253,6 +253,7 @@ Note that the ignore files consulted by the file explorer when `ignore` is set t
 |`git-global` | Enables reading global `.gitignore`, whose path is specified in git's config: `core.excludesfile` option | `false`
 |`git-exclude` | Enables reading `.git/info/exclude` files | `false`
 |`flatten-dirs` | Enables flattening single child directories | `true`
+|`icons` | Show [Nerd Font](https://www.nerdfonts.com) icons in the file explorer | `false`
 
 ### `[editor.buffer-picker]` Section
 

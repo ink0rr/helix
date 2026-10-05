@@ -145,6 +145,7 @@ pub fn default() -> HashMap<Mode, KeyTrie> {
         "N" => search_prev,
         "*" => search_selection_detect_word_boundaries,
         "A-*" => search_selection,
+        "minus" => file_explorer_in_current_buffer_directory,
 
         "u" => undo,
         "U" => redo,
@@ -226,7 +227,6 @@ pub fn default() -> HashMap<Mode, KeyTrie> {
             "f" => file_picker,
             "F" => file_picker_in_current_directory,
             "e" => file_explorer,
-            "." => file_explorer_in_current_buffer_directory,
             "b" => buffer_picker,
             "j" => jumplist_picker,
             "s" => lsp_or_syntax_symbol_picker,

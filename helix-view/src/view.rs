@@ -508,6 +508,12 @@ impl View {
                 text_annotations.add_inline_annotations(color_swatches_padding, None);
             }
         }
+        if config.file_explorer.icons {
+            let directory = theme.and_then(|t| t.find_highlight("ui.text.directory"));
+            for (highlight, icons) in &doc.explorer_icons {
+                text_annotations.add_inline_annotations(icons, highlight.or(directory));
+            }
+        }
 
         let width = self.inner_width(doc);
         let enable_cursor_line = self

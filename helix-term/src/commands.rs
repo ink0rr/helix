@@ -1,3 +1,4 @@
+pub(crate) mod explorer;
 pub(crate) mod dap;
 pub(crate) mod lsp;
 pub(crate) mod syntax;
@@ -3221,15 +3222,29 @@ fn file_explorer(cx: &mut Context) {
         return;
     }
 
-    if let Ok(picker) = ui::file_explorer(root, cx.editor) {
-        cx.push_layer(Box::new(overlaid(picker)));
-    }
+    explorer::open(cx.editor, root, None);
 }
 
 fn file_explorer_in_current_buffer_directory(cx: &mut Context) {
-    let doc_dir = doc!(cx.editor)
-        .path()
-        .and_then(|path| path.parent().map(|path| path.to_path_buf()));
+    // From an explorer, go up to its parent directory like oil.nvim's `-`.
+    let doc = doc!(cx.editor);
+    let target = match (doc.path(), &doc.explorer) {
+        (Some(path), _) => path.parent().map(|dir| (dir.to_path_buf(), path.file_name())),
+        (None, Some((dir, _))) => match dir.parent() {
+            Some(parent) => Some((parent.to_path_buf(), dir.file_name())),
+            None => return,
+        },
+        (None, None) => None,
+    };
+    let doc_dir = target.as_ref().map(|(dir, _)| dir.clone());
+    let focus = target.and_then(|(_, name)| name).map(|name| {
+        let name = name.to_string_lossy();
+        if doc.explorer.is_some() {
+            format!("{name}/")
+        } else {
+            name.into_owned()
+        }
+    });
 
     let path = match doc_dir {
         Some(path) => path,
@@ -3248,9 +3263,7 @@ fn file_explorer_in_current_buffer_directory(cx: &mut Context) {
         }
     };
 
-    if let Ok(picker) = ui::file_explorer(path, cx.editor) {
-        cx.push_layer(Box::new(overlaid(picker)));
-    }
+    explorer::open(cx.editor, path, focus.as_deref());
 }
 
 fn file_explorer_in_current_directory(cx: &mut Context) {
@@ -3261,9 +3274,7 @@ fn file_explorer_in_current_directory(cx: &mut Context) {
         return;
     }
 
-    if let Ok(picker) = ui::file_explorer(cwd, cx.editor) {
-        cx.push_layer(Box::new(overlaid(picker)));
-    }
+    explorer::open(cx.editor, cwd, None);
 }
 
 struct PathStyleConfig {

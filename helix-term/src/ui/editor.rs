@@ -1166,7 +1166,9 @@ impl EditorView {
                 cxt.register = cxt.editor.selected_register.take();
 
                 let res = self.handle_keymap_event(mode, cxt, event);
-                if matches!(&res, Some(KeymapResult::NotFound)) {
+                if matches!(&res, Some(KeymapResult::NotFound))
+                    && !commands::explorer::handle_key(cxt.editor, mode, event)
+                {
                     self.on_next_key(OnKeyCallbackKind::Fallback, cxt, event);
                 }
                 if self.keymaps.pending().is_empty() {

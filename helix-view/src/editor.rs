@@ -249,6 +249,8 @@ pub struct FileExplorerConfig {
     pub git_exclude: bool,
     /// Whether to flatten single-child directories in file explorer. Defaults to true.
     pub flatten_dirs: bool,
+    /// Whether to show Nerd Font icons before the entries. Defaults to false.
+    pub icons: bool,
 }
 
 impl Default for FileExplorerConfig {
@@ -262,6 +264,7 @@ impl Default for FileExplorerConfig {
             git_global: false,
             git_exclude: false,
             flatten_dirs: true,
+            icons: false,
         }
     }
 }
@@ -2082,7 +2085,7 @@ impl Editor {
         id
     }
 
-    fn new_file_from_document(&mut self, action: Action, doc: Document) -> DocumentId {
+    pub fn new_file_from_document(&mut self, action: Action, doc: Document) -> DocumentId {
         let id = self.new_document(doc);
         self.switch(id, action);
         id

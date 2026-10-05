@@ -213,6 +213,11 @@ pub struct Document {
 
     pub readonly: bool,
 
+    /// For file explorer buffers: the listed directory and the listing the buffer was opened with.
+    pub explorer: Option<(PathBuf, String)>,
+    /// Icons for the entries of a file explorer buffer, grouped by color (`None` for directories).
+    pub explorer_icons: Vec<(Option<syntax::Highlight>, Vec<InlineAnnotation>)>,
+
     pub previous_diagnostic_ids: HashMap<LanguageServerId, String>,
 
     /// Annotations for LSP document color swatches
@@ -794,6 +799,8 @@ impl Document {
             version_control_head: None,
             focused_at: std::time::Instant::now(),
             readonly: false,
+            explorer: None,
+            explorer_icons: Vec::new(),
             jump_labels: HashMap::new(),
             document_highlights: HashMap::new(),
             code_action_hints: HashSet::new(),
@@ -2159,6 +2166,12 @@ impl Document {
     }
 
     pub fn display_name(&self) -> Cow<'_, str> {
+        if let Some((dir, _)) = &self.explorer {
+            return helix_stdx::path::fold_home_dir(dir.join(""))
+                .to_string_lossy()
+                .into_owned()
+                .into();
+        }
         self.relative_path()
             .map_or_else(|| SCRATCH_BUFFER_NAME.into(), |path| path.to_string_lossy())
     }
