@@ -12,7 +12,7 @@
 //! A transmute is used to change the lifetime of the slice to static to circumvent that project.
 use std::mem::transmute;
 
-use helix_core::{Rope, RopeSlice};
+use helix_core::{line_ending::get_line_ending, Rope, RopeSlice};
 use imara_diff::{InternedInput, Interner};
 
 use super::{MAX_DIFF_BYTES, MAX_DIFF_LINES};
@@ -92,7 +92,9 @@ impl InternedRopeLines {
         let before = self
             .diff_base
             .lines()
-            .map(|line: RopeSlice| -> RopeSlice<'static> { unsafe { transmute(line) } });
+            .map(|line: RopeSlice| -> RopeSlice<'static> {
+                unsafe { transmute(without_line_ending(line)) }
+            });
         self.interned.update_before(before);
         self.num_tokens_diff_base = self.interned.interner.num_tokens();
         // the has to be interned again because the interner was fully cleared
@@ -109,7 +111,9 @@ impl InternedRopeLines {
         let after = self
             .doc
             .lines()
-            .map(|line: RopeSlice| -> RopeSlice<'static> { unsafe { transmute(line) } });
+            .map(|line: RopeSlice| -> RopeSlice<'static> {
+                unsafe { transmute(without_line_ending(line)) }
+            });
         self.interned.update_after(after);
     }
 
@@ -135,4 +139,10 @@ impl InternedRopeLines {
             Some(&self.interned)
         }
     }
+}
+
+/// Lines are compared without their line ending so LF/CRLF changes don't mark lines as changed.
+fn without_line_ending(line: RopeSlice) -> RopeSlice {
+    let end = line.len_chars() - get_line_ending(&line).map_or(0, |le| le.len_chars());
+    line.slice(..end)
 }
