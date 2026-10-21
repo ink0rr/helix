@@ -12,7 +12,6 @@
   (array)
   (array_pattern)
   (subscript_expression)
-  (template_substitution)
   (arguments)
   (class_body)
   (formal_parameters)
@@ -21,7 +20,7 @@
 
 [
   "(" ")"
-  "${" "{" "}"
+  "{" "}"
   "[" "]"
 ] @rainbow.bracket
 

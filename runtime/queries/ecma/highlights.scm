@@ -33,7 +33,6 @@
   "!"
   "!="
   "!=="
-  "=>"
   ">"
   ">="
   ">>"
@@ -75,23 +74,27 @@
   "async"
   "debugger"
   "extends"
-  "from"
   "get"
   "new"
   "set"
-  "target"
   "with"
 ] @keyword
 
+; `meta`/`target` in `import.meta`/`new.target` (VS Code: `support.variable.property.*`).
+(meta_property ["meta" "target"] @variable.builtin.global)
+
 [
   "of"
-  "as"
   "in"
   "delete"
   "typeof"
   "instanceof"
   "void"
 ] @keyword.operator
+
+"as" @keyword.control
+
+"=>" @keyword.function
 
 [
   "function"
@@ -131,6 +134,7 @@
 [
   "import"
   "export"
+  "from"
 ] @keyword.control.import
 
 [
@@ -169,6 +173,9 @@
   name: (property_identifier) @function.method)
 (method_definition
   name: (private_property_identifier) @function.method.private)
+((method_definition
+  name: (property_identifier) @keyword.storage.type)
+ (#eq? @keyword.storage.type "constructor"))
 
 (pair
   key: (property_identifier) @function.method
@@ -277,8 +284,8 @@
   "URIError" "AggregateError")
  (#is-not? local))
 
-((identifier) @variable.builtin
- (#match? @variable.builtin "^(arguments|module|console|window|document|globalThis|Math|JSON|Reflect|Intl)$")
+((identifier) @variable.builtin.global
+ (#match? @variable.builtin.global "^(arguments|module|console|window|document|globalThis|Math|JSON|Reflect|Intl)$")
  (#is-not? local))
 
 (call_expression
@@ -321,21 +328,30 @@
 ; Decorators
 ;-----------
 
-(decorator "@" @attribute)
-(decorator (identifier) @attribute)
+(decorator "@" @punctuation)
+(decorator (identifier) @function)
 (decorator
   (call_expression
-    function: (identifier) @attribute))
+    function: (identifier) @function))
 (decorator
   (member_expression
-    property: (property_identifier) @attribute))
+    property: (property_identifier) @function))
 (decorator
   (call_expression
     function: (member_expression
-      property: (property_identifier) @attribute)))
+      property: (property_identifier) @function)))
 
 ; Namespace imports/exports: `import * as ns` / `export * as ns`
 ;----------------------------------------------------------------
 
-(namespace_import (identifier) @namespace)
+(namespace_import (identifier) @namespace.alias)
 (namespace_export (identifier) @namespace)
+; `*` in `import * as ns`, `export * as ns`, `export * from "pkg"`.
+(namespace_import "*" @constant.builtin)
+(namespace_export "*" @constant.builtin)
+(export_statement "*" @constant.builtin)
+
+; Imported bindings: `import Foo, { Bar, baz as Qux } from "pkg"`. Their kind is unknown here,
+; so they are not colored as constructors/constants by name.
+(import_clause (identifier) @variable)
+(import_specifier [name: (identifier) alias: (identifier)] @variable)

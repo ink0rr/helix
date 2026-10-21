@@ -175,6 +175,7 @@ We use a similar set of scopes as
 [TextMate](https://macromates.com/manual/en/language_grammars) scopes.
 
 - `attribute` - Class attributes, HTML tag attributes
+  - `argument` - Words inside attribute arguments (e.g. `default` in `#[serde(default)]` in Rust)
 
 - `type` - Types
   - `builtin` - Primitive types provided by the language (`int`, `usize`)
@@ -183,7 +184,7 @@ We use a similar set of scopes as
     - `variant` - Enum variants
 - `constructor` - Constructors, struct/record literals, type names in value position
 
-- `constant` (TODO: constant.other.placeholder for `%v`)
+- `constant`
   - `builtin` Special constants provided by the language (`true`, `false`, `nil` etc)
     - `boolean`
   - `character`
@@ -191,6 +192,8 @@ We use a similar set of scopes as
   - `numeric` (numbers)
     - `integer`
     - `float`
+  - `other`
+    - `placeholder` - Format string placeholders (e.g. `%v` in Go)
 
 - `string` (TODO: string.quoted.{single, double}, string.raw/.unquoted)?
   - `regexp` - Regular expressions
@@ -210,6 +213,7 @@ We use a similar set of scopes as
   - `mutable` - Mutable variables (e.g. marked with `mut` in Rust)
   - `builtin` - Reserved language variables (`self`, `this`, `super`, etc.)
     - `mutable` - Mutable language variables (e.g. `mut self` in Rust)
+    - `global` - Well-known globals (e.g. `console`, `Math`, `import.meta` in ECMAScript)
   - `parameter` - Function parameters
     - `mutable` - Mutable function parameters (e.g. marked with `mut` in Rust)
   - `other`
@@ -217,6 +221,7 @@ We use a similar set of scopes as
       - `private` - Private fields that use a unique syntax (currently just ECMAScript-based languages)
 
 - `label` - `.class`, `#id` in CSS, etc.
+  - `lifetime` - Lifetimes (e.g. `'a` in Rust)
 
 - `punctuation`
   - `delimiter` - Commas, colons
@@ -252,8 +257,9 @@ We use a similar set of scopes as
   - `builtin`
 
 - `namespace` - Modules and namespaces (e.g. `std::collections`, package names)
+  - `alias` - Import aliases (e.g. `x` in `import * as x` or Go's `import x "pkg"`)
 
-- `special` - `derive` in Rust, bolded query-match in pickers (includes file explorer), etc.
+- `special` - bolded query-match in pickers (includes file explorer), etc.
 See also [#2380]
 
 - `markup`

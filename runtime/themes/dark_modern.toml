@@ -1,0 +1,159 @@
+# VS Code "Dark Modern": Dark+ token colors with the Dark Modern UI.
+# Tuned for semantic tokens from typescript-language-server and rust-analyzer (`editor.lsp.semantic-tokens`).
+
+# SYNTAX
+"attribute.argument"          = "operator"
+"namespace.alias"             = "variable"
+"attribute"                   = "variable"
+"comment"                     = "comment"
+"comment.unused"              = "variable"
+"constant"                    = "constant"
+"constant.builtin"            = "keyword"
+"constant.character"          = "string"
+"constant.character.escape"   = "escape"
+"constant.numeric"            = "number"
+"constant.other.placeholder"  = "variable"
+"constructor"                 = "type"
+"embedded"                    = "operator"
+"function"                    = "function"
+"function.macro"              = "keyword"
+"keyword"                     = "keyword"
+"keyword.control"             = "control"
+"keyword.directive"           = "control"
+"keyword.operator"            = "keyword"
+"keyword.storage.modifier.ref" = "operator"
+"label"                       = "label"
+"label.lifetime"              = "keyword"
+"namespace"                   = "type"
+"operator"                    = "operator"
+"punctuation"                 = "text"
+"punctuation.special"         = "keyword"
+"special"                     = "highlight"
+"string"                      = "string"
+"string.regexp"               = "regexp"
+"tag"                         = "keyword"
+"type"                        = "type"
+"type.enum.variant"           = "constant"
+"variable"                    = "variable"
+"variable.mutable"            = { fg = "variable", underline.style = "line" }
+"variable.builtin"            = "keyword"
+"variable.builtin.mutable"    = { fg = "keyword", underline.style = "line" }
+"variable.builtin.global"     = "variable"
+"variable.parameter.mutable"  = { fg = "variable", underline.style = "line" }
+
+# LSP SEMANTIC TOKENS
+"lsp.type.variable.readonly"        = "constant"
+"lsp.type.variable.defaultLibrary"  = "variable"
+"lsp.type.property.readonly"        = "constant"
+"lsp.type.enumMember"               = "constant"
+"lsp.type.static"                   = "variable"
+"lsp.type.selfTypeKeyword"          = "keyword"
+"lsp.type.lifetime"                 = "keyword"
+"lsp.type.keyword.controlFlow"      = "control"
+"lsp.type.attribute"                = "operator"
+"lsp.type.builtinAttribute"         = "operator"
+"lsp.type.deriveHelper"             = "operator"
+"lsp.type.decorator"                = "function"
+"lsp.type.toolModule"               = "function"
+"lsp.type.procMacro"                = "keyword"
+"lsp.type.formatSpecifier"          = "keyword"
+"lsp.mod.mutable"                   = { underline.style = "line" }
+
+# MARKUP
+"markup.heading"       = { fg = "keyword", modifiers = ["bold"] }
+"markup.list"          = "#6796e6"
+"markup.bold"          = { fg = "keyword", modifiers = ["bold"] }
+"markup.italic"        = { fg = "control", modifiers = ["italic"] }
+"markup.strikethrough" = { modifiers = ["crossed_out"] }
+"markup.link.url"      = { underline.style = "line" }
+"markup.link.text"     = "string"
+"markup.quote"         = "comment"
+"markup.raw"           = "string"
+
+"diff.plus"  = "#2ea043"
+"diff.minus" = "#f85149"
+"diff.delta" = "#0078d4"
+
+# UI
+"ui.background"                  = { fg = "text", bg = "background" }
+"ui.window"                      = { fg = "border" }
+"ui.popup"                       = { fg = "text", bg = "widget" }
+"ui.help"                        = { fg = "text", bg = "widget" }
+"ui.menu"                        = { fg = "text", bg = "widget" }
+"ui.menu.selected"               = { fg = "white", bg = "#04395e" }
+"ui.menu.scroll"                 = { fg = "#424242", bg = "widget" }
+"ui.cursor"                      = { fg = "#aeafad", modifiers = ["reversed"] }
+"ui.cursor.primary"              = { fg = "#aeafad", modifiers = ["reversed"] }
+"ui.cursor.match"                = { underline = { color = "#888888", style = "line" } }
+"ui.selection"                   = { bg = "#3a3d41" }
+"ui.selection.primary"           = { bg = "#264f78" }
+"ui.linenr"                      = { fg = "#6e7681" }
+"ui.linenr.selected"             = { fg = "text" }
+"ui.cursorline.primary"          = { bg = "#282828" }
+"ui.statusline"                  = { fg = "text", bg = "panel" }
+"ui.statusline.inactive"         = { fg = "inactive", bg = "background" }
+"ui.statusline.normal"           = { fg = "white", bg = "accent" }
+"ui.statusline.insert"           = { fg = "white", bg = "#16825d" }
+"ui.statusline.select"           = { fg = "white", bg = "control" }
+"ui.bufferline"                  = { fg = "inactive", bg = "panel" }
+"ui.bufferline.active"           = { fg = "white", bg = "background" }
+"ui.bufferline.background"       = { bg = "panel" }
+"ui.text"                        = { fg = "text" }
+"ui.text.focus"                  = { fg = "white" }
+"ui.text.directory"              = { fg = "text" }
+"ui.text.inactive"               = { fg = "inactive" }
+"ui.virtual.whitespace"          = { fg = "#3b3b3b" }
+"ui.virtual.wrap"                = { fg = "#3b3b3b" }
+"ui.virtual.ruler"               = { bg = "border" }
+"ui.virtual.indent-guide"        = { fg = "#404040" }
+"ui.virtual.inlay-hint"          = { fg = "#969696", bg = "#292929" }
+"ui.virtual.jump-label"          = { fg = "white", bg = "#9e6a03", modifiers = ["bold"] }
+"ui.highlight.frameline"         = { bg = "#4b4b18" }
+"ui.debug.active"                = { fg = "#ffcc00" }
+"ui.debug.breakpoint"            = { fg = "#e51400" }
+"ui.picker.header.column"        = { underline.style = "line" }
+"ui.picker.header.column.active" = { fg = "white", underline.style = "line" }
+
+"error"   = { fg = "error" }
+"warning" = { fg = "warning" }
+"info"    = { fg = "info" }
+"hint"    = { fg = "hint" }
+"diagnostic.error".underline   = { color = "error", style = "curl" }
+"diagnostic.warning".underline = { color = "warning", style = "curl" }
+"diagnostic.info".underline    = { color = "info", style = "curl" }
+"diagnostic.hint".underline    = { color = "hint", style = "curl" }
+"diagnostic.unnecessary"       = { modifiers = ["dim"] }
+"diagnostic.deprecated"        = { modifiers = ["crossed_out"] }
+
+rainbow = ["#ffd700", "#da70d6", "#179fff"]
+
+[palette]
+# Dark+ token colors
+keyword  = "#569cd6"
+control  = "#c586c0"
+function = "#dcdcaa"
+type     = "#4ec9b0"
+variable = "#9cdcfe"
+constant = "#4fc1ff"
+string   = "#ce9178"
+regexp   = "#d16969"
+escape   = "#d7ba7d"
+number   = "#b5cea8"
+comment  = "#6a9955"
+label    = "#c8c8c8"
+operator = "#d4d4d4"
+
+# Dark Modern UI
+text       = "#cccccc"
+white      = "#ffffff"
+inactive   = "#9d9d9d"
+background = "#1f1f1f"
+panel      = "#181818"
+widget     = "#202020"
+border     = "#2b2b2b"
+accent     = "#0078d4"
+highlight  = "#2aaaff"
+error      = "#f14c4c"
+warning    = "#cca700"
+info       = "#3794ff"
+hint       = "#b0b0b0"

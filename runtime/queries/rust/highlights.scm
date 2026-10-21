@@ -2,8 +2,7 @@
 ; Basic identifiers
 ; -------
 
-; We do not style ? as an operator on purpose as it allows styling ? differently, as many highlighters do. @operator.special might have been a better scope, but @special is already documented so the change would break themes (including the intent of the default theme)
-"?" @special
+"?" @operator
 
 (type_identifier) @type
 (identifier) @variable
@@ -146,8 +145,8 @@
 (shorthand_field_identifier) @variable.other.member
 
 (lifetime
-  "'" @label
-  (identifier) @label)
+  "'" @label.lifetime
+  (identifier) @label.lifetime)
 (label
   "'" @label
   (identifier) @label)
@@ -253,9 +252,7 @@
   "yield"
 ] @keyword.control.return
 
-"use" @keyword.control.import
-(mod_item "mod" @keyword.control.import !body)
-(use_as_clause "as" @keyword.control.import)
+"use" @keyword
 
 (type_cast_expression "as" @keyword.operator)
 
@@ -488,15 +485,28 @@
  (#match? @function "^[a-z_]"))
 
 (attribute
-  (identifier) @function.macro)
+  (identifier) @attribute)
 (inner_attribute_item "!" @punctuation)
 (attribute
   [
-    (identifier) @function.macro
+    (identifier) @attribute
     (scoped_identifier
-      name: (identifier) @function.macro)
-  ]
-  (token_tree (identifier) @function.macro)?)
+      name: (identifier) @attribute)
+  ])
+
+; Words inside attribute arguments, e.g. `default`/`rename` in `#[serde(default, rename = "x")]`.
+; ponytail: two nesting levels only; add more if deeper `cfg(all(any(...)))` trees need it.
+(attribute
+  arguments: (token_tree
+    _ @attribute.argument)
+  (#match? @attribute.argument "^[A-Za-z_][A-Za-z0-9_]*$")
+  (#not-any-of? @attribute.argument "true" "false"))
+(attribute
+  arguments: (token_tree
+    (token_tree
+      _ @attribute.argument))
+  (#match? @attribute.argument "^[A-Za-z_][A-Za-z0-9_]*$")
+  (#not-any-of? @attribute.argument "true" "false"))
 
 (inner_attribute_item) @attribute
 
@@ -514,9 +524,9 @@
 (fragment_specifier) @type
 
 (attribute
-  (identifier) @special
+  (identifier) @attribute
   arguments: (token_tree (identifier) @type)
-  (#eq? @special "derive")
+  (#eq? @attribute "derive")
 )
 
 (token_repetition_pattern) @punctuation.delimiter
@@ -579,3 +589,7 @@
     "FromIterator"
     "TryFrom"
     "TryInto"))
+
+; `Self` reads like `self`: a keyword, not an ordinary type.
+([(identifier) (type_identifier)] @variable.builtin
+ (#eq? @variable.builtin "Self"))

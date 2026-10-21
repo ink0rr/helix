@@ -90,7 +90,7 @@
   (array_pattern
     (identifier) @variable.parameter))
 
-(public_field_definition) @punctuation.special
+(public_field_definition ["?" "!"] @operator)
 (this_type) @variable.builtin
 (type_predicate) @keyword.operator
 
@@ -101,8 +101,8 @@
   ":"
 ] @punctuation.delimiter
 
-(optional_parameter "?" @punctuation.special)
-(property_signature "?" @punctuation.special)
+(optional_parameter "?" @operator)
+(property_signature "?" @operator)
 
 (conditional_type ["?" ":"] @operator)
 (ternary_expression ["?" ":"] @operator)
@@ -120,17 +120,13 @@
   "keyof"
   "namespace"
   "override"
-  "satisfies"
   "using"
 ] @keyword
 
+"satisfies" @keyword.control
+
 ; `asserts` in a return-type type predicate, e.g. `function f(x): asserts x is T`
 "asserts" @keyword.operator
-
-[
-  "export"
-  "from"
-] @keyword.control.import
 
 [
   "type"
@@ -152,6 +148,9 @@
 (type_parameter
   name: (type_identifier) @type.parameter)
 (predefined_type) @type.builtin
+; `void` is also a keyword.operator token; as a type it is a type.
+(predefined_type "void" @type.builtin)
+(literal_type [(null) (undefined) (true) (false)] @type.builtin)
 
 ; Type arguments and parameters
 ; -----------------------------
@@ -188,6 +187,11 @@
   name: (property_identifier) @function.method)
 (abstract_method_signature
   name: (property_identifier) @function.method)
+([(method_signature
+    name: (property_identifier) @keyword.storage.type)
+  (abstract_method_signature
+    name: (property_identifier) @keyword.storage.type)]
+ (#eq? @keyword.storage.type "constructor"))
 (property_signature
   name: (property_identifier) @function.method
   type: (type_annotation

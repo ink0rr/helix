@@ -6,6 +6,8 @@
 (identifier) @variable
 
 (package_identifier) @namespace
+(import_spec
+  name: (package_identifier) @namespace.alias)
 
 (const_spec
   name: (identifier) @constant)
@@ -34,6 +36,11 @@
 (call_expression
   function: (identifier) @function.builtin
   (#match? @function.builtin "^(append|cap|close|complex|copy|delete|imag|len|make|new|panic|print|println|real|recover|min|max|clear)$"))
+
+; Conversions to builtin types: `int(x)`, `string(b)`.
+(call_expression
+  function: (identifier) @type.builtin
+  (#match? @type.builtin "^(any|bool|byte|comparable|complex128|complex64|error|float32|float64|int|int16|int32|int64|int8|rune|string|uint|uint16|uint32|uint64|uint8|uintptr)$"))
 
 ; Types
 
@@ -129,7 +136,7 @@
 ; Keywords
 
 [
-  "default"
+  "package"
   "type"
 ] @keyword
 
@@ -145,6 +152,7 @@
   "switch"
   "select"
   "case"
+  "default"
 ] @keyword.control.conditional
 
 [
@@ -152,10 +160,7 @@
   "range"
 ] @keyword.control.repeat
 
-[
-  "import"
-  "package"
-] @keyword.control.import
+"import" @keyword.control.import
 
 [
   "return"

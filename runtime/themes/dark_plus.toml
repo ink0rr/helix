@@ -8,6 +8,7 @@
 "constant.character"        = "orange"
 "constant.character.escape" = "gold"
 "constant.numeric"          = "pale_green"
+"constant.other.placeholder" = "variable"
 "constructor"               = "type"
 "diff.delta"                = "blue4"
 "diff.minus"                = "orange_red"

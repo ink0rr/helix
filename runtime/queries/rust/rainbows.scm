@@ -62,7 +62,6 @@
 (token_tree (token_tree) @rainbow.scope)
 
 [
-  "#"
   "[" "]"
   "(" ")"
   "{" "}"

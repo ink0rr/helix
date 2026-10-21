@@ -147,7 +147,7 @@
 | jjrevset | ✓ |  |  |  |  |  |
 | jjtemplate | ✓ |  |  |  |  |  |
 | jq | ✓ | ✓ |  |  |  | `jq-lsp` |
-| jsdoc | ✓ |  |  |  |  |  |
+| jsdoc | ✓ |  |  |  | ✓ |  |
 | json | ✓ | ✓ | ✓ |  | ✓ | `vscode-json-language-server` |
 | json-ld | ✓ | ✓ | ✓ |  | ✓ | `vscode-json-language-server` |
 | json5 | ✓ | ✓ | ✓ |  | ✓ |  |
