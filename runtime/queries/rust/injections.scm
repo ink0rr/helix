@@ -5,8 +5,15 @@
  (#set! injection.language "markdown-rustdoc")
  (#set! injection.combined))
 
+; `json!` bodies mix JSON objects with Rust expressions and parse as neither, so they are
+; highlighted as plain token trees instead.
 ((macro_invocation
+  macro: [
+    (scoped_identifier name: (_) @_macro_name)
+    (identifier) @_macro_name
+  ]
   (token_tree) @injection.content)
+ (#not-eq? @_macro_name "json")
  (#set! injection.language "rust")
  (#set! injection.include-children))
 
@@ -37,18 +44,6 @@
    (token_tree) @injection.content)
  (#eq? @_macro_name "slint")
  (#set! injection.language "slint")
- (#set! injection.include-children))
-
-((macro_invocation
-   macro:
-     [
-       (scoped_identifier name: (_) @_macro_name)
-       (identifier) @_macro_name
-     ]
-   (token_tree
-     (token_tree . "{" "}" .) @injection.content))
- (#eq? @_macro_name "json")
- (#set! injection.language "json")
  (#set! injection.include-children))
 
 (call_expression

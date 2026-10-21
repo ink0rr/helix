@@ -54,7 +54,7 @@
     operand: (identifier) @_module
     field: (field_identifier) @_func)
   arguments: (argument_list
-    . (interpreted_string_literal) @injection.content))
+    . (interpreted_string_literal (interpreted_string_literal_content) @injection.content)))
   (#eq? @_module "fmt")
   (#any-of? @_func "Printf" "Sprintf" "Scanf" "Errorf")
   (#set! injection.language "go-format-string"))
@@ -71,7 +71,7 @@
     (_)
     ; (identifier)
     .
-    (interpreted_string_literal) @injection.content))
+    (interpreted_string_literal (interpreted_string_literal_content) @injection.content)))
   (#eq? @_module "fmt")
   (#any-of? @_func "Fprintf" "Fscanf" "Sscanf")
   (#set! injection.language "go-format-string"))
@@ -87,6 +87,6 @@
     operand: (identifier)
     field: (field_identifier) @_func)
   arguments: (argument_list
-    . (interpreted_string_literal) @injection.content))
+    . (interpreted_string_literal (interpreted_string_literal_content) @injection.content)))
   (#any-of? @_func "Printf" "Fatalf" "Panicf")
   (#set! injection.language "go-format-string"))

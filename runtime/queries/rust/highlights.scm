@@ -472,6 +472,21 @@
 ; Macros
 ; ---
 
+; Calls inside token trees that aren't re-parsed as Rust (e.g. `json!` bodies):
+; `f(...)`, `x.f(...)`, `x.f::<T>()`.
+((token_tree
+  (identifier) @function
+  .
+  (token_tree . "("))
+ (#match? @function "^[a-z_]"))
+((token_tree
+  (identifier) @function
+  .
+  "::"
+  .
+  "<")
+ (#match? @function "^[a-z_]"))
+
 (attribute
   (identifier) @function.macro)
 (inner_attribute_item "!" @punctuation)

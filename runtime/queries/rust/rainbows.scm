@@ -50,11 +50,27 @@
 ; attributes like `#[serde(rename_all = "kebab-case")]`
 (attribute arguments: (token_tree) @rainbow.scope)
 
+; Token trees not re-parsed as Rust (`json!` bodies, attribute arguments). Nested token trees
+; inside re-parsed macro bodies are skipped by the injection, so they aren't counted twice.
+((macro_invocation
+   macro: [
+     (scoped_identifier name: (_) @_macro_name)
+     (identifier) @_macro_name
+   ]
+   (token_tree) @rainbow.scope)
+ (#eq? @_macro_name "json"))
+(token_tree (token_tree) @rainbow.scope)
+
 [
   "#"
   "[" "]"
   "(" ")"
   "{" "}"
-  "<" ">"
-  "|"
 ] @rainbow.bracket
+
+; `<>` and `|` are only brackets here, not e.g. inside token trees.
+(type_parameters ["<" ">"] @rainbow.bracket)
+(type_arguments ["<" ">"] @rainbow.bracket)
+(bracketed_type ["<" ">"] @rainbow.bracket)
+(for_lifetimes ["<" ">"] @rainbow.bracket)
+(closure_parameters "|" @rainbow.bracket)
