@@ -7,6 +7,7 @@ use crate::{
     keymap::{KeymapResult, Keymaps},
     ui::{
         document::{render_document, LinePos, TextRenderer},
+        minimap::{self, Bar},
         statusline,
         text_decorations::{self, Decoration, DecorationManager, InlineDiagnostics},
         Completion, ProgressSpinners,
@@ -44,6 +45,8 @@ pub struct EditorView {
     spinners: ProgressSpinners,
     /// Tracks if the terminal window is focused by reaction to terminal focus events
     terminal_focused: bool,
+    /// The bar being dragged with the left mouse button, if any.
+    bar_drag: Option<Bar>,
 }
 
 #[derive(Debug, Clone)]
@@ -67,6 +70,7 @@ impl EditorView {
             completion: None,
             spinners: ProgressSpinners::default(),
             terminal_focused: true,
+            bar_drag: None,
         }
     }
 
@@ -224,6 +228,7 @@ impl EditorView {
             theme,
             decorations,
         );
+        minimap::render(doc, view, theme, &loader, surface);
 
         // if we're not at the edge of the screen, draw a right border
         if viewport.right() != view.area.right() {
@@ -1319,8 +1324,51 @@ impl EditorView {
             })
         };
 
+        let bar_and_view = |editor: &Editor, row, column| {
+            editor.tree.views().find_map(|(view, _focus)| {
+                minimap::bar_at(view, &editor.documents[&view.doc], row, column)
+                    .map(|bar| (bar, view.id))
+            })
+        };
+
+        // Scrolls the focused view so the line under `row` of the bar is centered.
+        let scroll_to_bar_row = |cxt: &mut commands::Context, bar: Bar, row: u16| {
+            let (view, doc) = current!(cxt.editor);
+            let Some(top) = minimap::top_line_at(doc, view, bar, row) else {
+                return;
+            };
+            let view_id = view.id;
+            let mut offset = doc.view_offset(view_id);
+            let anchor = doc.text().line_to_char(top);
+            let direction = if anchor >= offset.anchor {
+                Direction::Forward
+            } else {
+                Direction::Backward
+            };
+            offset.anchor = anchor;
+            offset.vertical_offset = 0;
+            doc.set_view_offset(view_id, offset);
+            // Scrolling by 0 only moves the cursor back into the view.
+            commands::scroll(cxt, 0, direction, false);
+            cxt.editor.ensure_cursor_in_view(view_id);
+        };
+
+        if kind == MouseEventKind::Up(MouseButton::Left) && self.bar_drag.take().is_some() {
+            return EventResult::Consumed(None);
+        }
+
         match kind {
             MouseEventKind::Down(MouseButton::Left) => {
+                if let Some((bar, view_id)) = bar_and_view(cxt.editor, row, column) {
+                    if view_id != view!(cxt.editor).id {
+                        cxt.editor.focus(view_id);
+                        self.clear_completion(cxt.editor);
+                    }
+                    self.bar_drag = Some(bar);
+                    scroll_to_bar_row(cxt, bar, row);
+                    return EventResult::Consumed(None);
+                }
+
                 let editor = &mut cxt.editor;
 
                 if let Some((pos, view_id)) = pos_and_view(editor, row, column, true) {
@@ -1376,6 +1424,11 @@ impl EditorView {
             }
 
             MouseEventKind::Drag(MouseButton::Left) => {
+                if let Some(bar) = self.bar_drag {
+                    scroll_to_bar_row(cxt, bar, row);
+                    return EventResult::Consumed(None);
+                }
+
                 let (view, doc) = current!(cxt.editor);
 
                 let pos = match view.pos_at_screen_coords(doc, row, column, true) {
@@ -1401,8 +1454,11 @@ impl EditorView {
                     _ => unreachable!(),
                 };
 
-                match pos_and_view(cxt.editor, row, column, false) {
-                    Some((_, view_id)) => cxt.editor.tree.focus = view_id,
+                let view_id = pos_and_view(cxt.editor, row, column, false)
+                    .map(|(_, view_id)| view_id)
+                    .or_else(|| bar_and_view(cxt.editor, row, column).map(|(_, id)| id));
+                match view_id {
+                    Some(view_id) => cxt.editor.tree.focus = view_id,
                     None => return EventResult::Ignored(None),
                 }
 

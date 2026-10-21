@@ -2,7 +2,7 @@ use crate::{
     align_view,
     annotations::diagnostics::InlineDiagnostics,
     document::{DocumentColorSwatches, DocumentInlayHints},
-    editor::{GutterConfig, GutterType},
+    editor::{Config, GutterConfig, GutterType, MinimapConfig, ScrollbarConfig},
     graphics::Rect,
     handlers::diagnostics::DiagnosticsHandler,
     Align, Document, DocumentId, Theme, ViewId,
@@ -159,6 +159,8 @@ pub struct View {
     pub object_selections: Vec<Selection>,
     /// all gutter-related configuration settings, used primarily for gutter rendering
     pub gutters: GutterConfig,
+    pub minimap: MinimapConfig,
+    pub scrollbar: ScrollbarConfig,
     /// A mapping between documents and the last history revision the view was updated at.
     /// Changes between documents and views are synced lazily when switching windows. This
     /// mapping keeps track of the last applied history revision so that only new changes
@@ -195,9 +197,24 @@ impl View {
             last_modified_docs: [None, None],
             object_selections: Vec::new(),
             gutters,
+            // Disabled until the editor applies its config, see `apply_config`.
+            minimap: MinimapConfig {
+                enable: false,
+                ..Default::default()
+            },
+            scrollbar: ScrollbarConfig {
+                enable: false,
+                ..Default::default()
+            },
             doc_revisions: HashMap::new(),
             diagnostics_handler: DiagnosticsHandler::new(),
         }
+    }
+
+    pub fn apply_config(&mut self, config: &Config) {
+        self.gutters = config.gutters.clone();
+        self.minimap = config.minimap.clone();
+        self.scrollbar = config.scrollbar.clone();
     }
 
     pub fn add_to_history(&mut self, id: DocumentId) {
@@ -208,7 +225,12 @@ impl View {
     }
 
     pub fn inner_area(&self, doc: &Document) -> Rect {
-        self.area.clip_left(self.gutter_offset(doc)).clip_bottom(1) // -1 for statusline
+        let gutter = self.gutter_offset(doc);
+        let (minimap, scrollbar) = self.bars_width(gutter);
+        self.area
+            .clip_left(gutter)
+            .clip_right(minimap + scrollbar)
+            .clip_bottom(1) // -1 for statusline
     }
 
     pub fn inner_height(&self) -> usize {
@@ -216,7 +238,39 @@ impl View {
     }
 
     pub fn inner_width(&self, doc: &Document) -> u16 {
-        self.area.clip_left(self.gutter_offset(doc)).width
+        self.inner_area(doc).width
+    }
+
+    /// Widths of the minimap and the scrollbar on the right edge, 0 when hidden.
+    fn bars_width(&self, gutter_offset: u16) -> (u16, u16) {
+        let available = self.area.width.saturating_sub(gutter_offset);
+        let scrollbar = (self.scrollbar.enable
+            && available.saturating_sub(1) >= self.scrollbar.min_text_width.max(1))
+            as u16;
+        let available = available - scrollbar;
+        let width = self.minimap.width;
+        let minimap = if self.minimap.enable
+            && width > 0
+            && available.saturating_sub(width) >= self.minimap.min_text_width.max(1)
+        {
+            width
+        } else {
+            0
+        };
+        (minimap, scrollbar)
+    }
+
+    /// Screen areas of the minimap and the scrollbar, `None` when hidden.
+    pub fn bar_areas(&self, doc: &Document) -> (Option<Rect>, Option<Rect>) {
+        let (minimap, scrollbar) = self.bars_width(self.gutter_offset(doc));
+        let area = self.area.clip_bottom(1); // -1 for statusline
+        let column = |x: u16, width: u16| {
+            (width > 0).then(|| Rect::new(x, area.y, width, area.height))
+        };
+        (
+            column(area.right() - scrollbar - minimap, minimap),
+            column(area.right() - scrollbar, scrollbar),
+        )
     }
 
     pub fn gutters(&self) -> &[GutterType] {

@@ -383,6 +383,28 @@ character = "╎" # Some characters that work well: "▏", "┆", "┊", "⸽"
 skip-levels = 1
 ```
 
+### `[editor.minimap]` Section
+
+A minimap of the document drawn on the right side of each view. Each cell shows
+2 characters of 4 lines in braille dots, colored by syntax highlighting. Documents
+longer than the minimap scroll it along with the view. Click or drag to scroll.
+
+| Key              | Description                                                                 | Default |
+| ---              | ---                                                                         | ---     |
+| `enable`         | Whether to show the minimap                                                 | `true`  |
+| `width`          | Width of the minimap in cells                                               | `8`     |
+| `min-text-width` | Hide the minimap when the text area would be narrower than this (0: never)  | `56`    |
+
+### `[editor.scrollbar]` Section
+
+A one-column scrollbar on the right edge of each view. Besides the visible range it
+marks diagnostics, `diff` changes and cursor positions. Click or drag to scroll.
+
+| Key              | Description                                                                   | Default |
+| ---              | ---                                                                           | ---     |
+| `enable`         | Whether to show the scrollbar                                                 | `true`  |
+| `min-text-width` | Hide the scrollbar when the text area would be narrower than this (0: never)  | `20`    |
+
 ### `[editor.gutters]` Section
 
 For simplicity, `editor.gutters` accepts an array of gutter types, which will

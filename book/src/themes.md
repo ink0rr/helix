@@ -372,6 +372,10 @@ These scopes are used for theming the editor interface:
 | `ui.menu`                         | Code and command completion menus                                                              |
 | `ui.menu.selected`                | Selected autocomplete item                                                                     |
 | `ui.menu.scroll`                  | `fg` sets thumb color, `bg` sets track color of scrollbar                                      |
+| `ui.minimap`                      | Minimap (falls back to `ui.background`)                                                        |
+| `ui.minimap.viewport`             | Visible range in the minimap (falls back to `ui.cursorline.primary`)                           |
+| `ui.scrollbar`                    | `bg` sets the editor scrollbar track color (falls back to `ui.menu.scroll` `bg`)               |
+| `ui.scrollbar.thumb`              | `bg` sets the editor scrollbar thumb color (falls back to `ui.menu.scroll` `fg`)               |
 | `ui.selection`                    | For selections in the editing area                                                             |
 | `ui.selection.primary`            |                                                                                                |
 | `ui.highlight`                    | Highlighted lines in the picker preview                                                        |

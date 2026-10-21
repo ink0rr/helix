@@ -269,6 +269,45 @@ impl Default for FileExplorerConfig {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
+pub struct MinimapConfig {
+    /// Whether to show a minimap on the right side of each view. Defaults to true.
+    pub enable: bool,
+    /// Width of the minimap in cells. Each cell shows 2 characters of 4 lines. Defaults to 8.
+    pub width: u16,
+    /// Hide the minimap when the text area would be narrower than this. 0 never hides. Defaults to 56.
+    pub min_text_width: u16,
+}
+
+impl Default for MinimapConfig {
+    fn default() -> Self {
+        Self {
+            enable: true,
+            width: 8,
+            min_text_width: 56,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
+pub struct ScrollbarConfig {
+    /// Whether to show a scrollbar on the right edge of each view. Defaults to true.
+    pub enable: bool,
+    /// Hide the scrollbar when the text area would be narrower than this. 0 never hides. Defaults to 20.
+    pub min_text_width: u16,
+}
+
+impl Default for ScrollbarConfig {
+    fn default() -> Self {
+        Self {
+            enable: true,
+            min_text_width: 20,
+        }
+    }
+}
+
 fn serialize_alphabet<S>(alphabet: &[char], serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -315,6 +354,8 @@ pub struct Config {
     pub cursorcolumn: bool,
     #[serde(deserialize_with = "deserialize_gutter_seq_or_struct")]
     pub gutters: GutterConfig,
+    pub minimap: MinimapConfig,
+    pub scrollbar: ScrollbarConfig,
     /// Middle click paste support. Defaults to true.
     pub middle_click_paste: bool,
     /// Automatic insertion of pairs to parentheses, brackets,
@@ -1210,6 +1251,8 @@ impl Default for Config {
             cursorline: false,
             cursorcolumn: false,
             gutters: GutterConfig::default(),
+            minimap: MinimapConfig::default(),
+            scrollbar: ScrollbarConfig::default(),
             middle_click_paste: true,
             auto_pairs: AutoPairConfig::default(),
             auto_completion: true,
@@ -1939,7 +1982,7 @@ impl Editor {
         for (view, _) in self.tree.views_mut() {
             let doc = doc_mut!(self, &view.doc);
             view.sync_changes(doc);
-            view.gutters = config.gutters.clone();
+            view.apply_config(&config);
             view.ensure_cursor_in_view(doc, config.scrolloff)
         }
     }
@@ -2041,7 +2084,11 @@ impl Editor {
                     .try_get(self.tree.focus)
                     .filter(|v| id == v.doc) // Different Document
                     .cloned()
-                    .unwrap_or_else(|| View::new(id, self.config().gutters.clone()));
+                    .unwrap_or_else(|| {
+                        let mut view = View::new(id, self.config().gutters.clone());
+                        view.apply_config(&self.config());
+                        view
+                    });
                 let view_id = self.tree.split(
                     view,
                     match action {
@@ -2243,7 +2290,8 @@ impl Editor {
                         self.syn_loader.clone(),
                     ))
                 });
-            let view = View::new(doc_id, self.config().gutters.clone());
+            let mut view = View::new(doc_id, self.config().gutters.clone());
+            view.apply_config(&self.config());
             let view_id = self.tree.insert(view);
             let doc = doc_mut!(self, &doc_id);
             doc.ensure_view_init(view_id);
