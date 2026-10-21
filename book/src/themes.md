@@ -296,10 +296,14 @@ scopes above (e.g. a `parameter` token uses `variable.parameter`). Themes can al
 tokens by their raw LSP names, including server-specific ones:
 
 - `lsp.type.<type>` - token type, e.g. `lsp.type.parameter`; takes precedence over the standard scope
+- `lsp.type.<type>.<modifier>` - token type carrying a modifier, e.g. `lsp.type.variable.readonly`;
+  takes precedence over `lsp.type.<type>`. If several match, the modifier listed first in the
+  server's legend wins
 - `lsp.mod.<modifier>` - token modifier, e.g. `lsp.mod.deprecated`; layered on top of the type style
 
 ```toml
 "lsp.type.colorGreen" = "#55ff55"
+"lsp.type.variable.readonly" = "#4fc1ff"
 "lsp.mod.bold" = { modifiers = ["bold"] }
 ```
 

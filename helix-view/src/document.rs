@@ -275,6 +275,33 @@ pub struct SemanticTokens {
     pub tokens: Vec<SemanticToken>,
 }
 
+impl SemanticTokens {
+    /// The theme's `lsp.type.<type>.<modifier>` highlight for the first of the token's modifiers
+    /// (in legend order) the theme defines, else `lsp.type.<type>`. `scope` is reusable scratch.
+    pub fn type_highlight(
+        &self,
+        token: &SemanticToken,
+        theme: &crate::Theme,
+        scope: &mut String,
+    ) -> Option<syntax::Highlight> {
+        let type_scope = self.type_scopes.get(token.token_type as usize)?;
+        for (i, modifier_scope) in self.modifier_scopes.iter().enumerate() {
+            if token.modifiers & (1 << i) == 0 {
+                continue;
+            }
+            let modifier = modifier_scope.strip_prefix("lsp.mod.").unwrap_or(modifier_scope);
+            scope.clear();
+            scope.push_str(type_scope);
+            scope.push('.');
+            scope.push_str(modifier);
+            if let Some(highlight) = theme.find_highlight_exact(scope) {
+                return Some(highlight);
+            }
+        }
+        theme.find_highlight_exact(type_scope)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SemanticToken {
     /// Character offsets in the document for the token range.
@@ -2575,6 +2602,57 @@ mod test {
     use arc_swap::ArcSwap;
 
     use super::*;
+
+    #[test]
+    fn semantic_token_type_modifier_precedence() {
+        let theme = crate::Theme::from(
+            toml::from_str::<toml::Value>(
+                r##"
+                "lsp.type.variable" = "#000001"
+                "lsp.type.variable.readonly" = "#000002"
+                "lsp.type.variable.defaultLibrary" = "#000003"
+                "##,
+            )
+            .unwrap(),
+        );
+        let tokens = SemanticTokens {
+            type_scopes: vec!["lsp.type.function".into(), "lsp.type.variable".into()],
+            modifier_scopes: vec![
+                "lsp.mod.async".into(),
+                "lsp.mod.readonly".into(),
+                "lsp.mod.defaultLibrary".into(),
+            ],
+            tokens: Vec::new(),
+        };
+        let token = |token_type, modifiers| SemanticToken {
+            start: 0,
+            end: 1,
+            token_type,
+            modifiers,
+            scope: None,
+            rule_fg: None,
+            rule_modifiers: None,
+        };
+        let mut scope = String::new();
+        let mut get = |token_type, modifiers| {
+            tokens.type_highlight(&token(token_type, modifiers), &theme, &mut scope)
+        };
+        let [plain, readonly, default_library] = [
+            "lsp.type.variable",
+            "lsp.type.variable.readonly",
+            "lsp.type.variable.defaultLibrary",
+        ]
+        .map(|scope| theme.find_highlight_exact(scope));
+
+        // Undefined modifier key falls back to the type key.
+        assert_eq!(get(1, 0b001), plain);
+        assert_eq!(get(1, 0b010), readonly);
+        assert_eq!(get(1, 0b100), default_library);
+        // Both defined: the modifier first in the legend wins.
+        assert_eq!(get(1, 0b110), readonly);
+        // A modifier key never applies to another type.
+        assert_eq!(get(0, 0b010), None);
+    }
 
     #[test]
     fn changeset_to_changes_ignore_line_endings() {

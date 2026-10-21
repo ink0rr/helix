@@ -286,7 +286,8 @@ fn standard_scope(
         "property" => "variable.other.member",
         "function" if has("defaultLibrary") => "function.builtin",
         "function" => "function",
-        "method" => "function.method",
+        // typescript-language-server names methods `member`.
+        "method" | "member" => "function.method",
         "macro" => "function.macro",
         "decorator" => "attribute",
         "label" => "label",

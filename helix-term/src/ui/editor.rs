@@ -339,9 +339,10 @@ impl EditorView {
     }
 
     /// LSP semantic tokens in the viewport, patched over tree-sitter highlights. A token is colored
-    /// by the theme's `lsp.type.<name>`, else the language's `semantic-token-rules`, else its
-    /// standard scope; tokens with none of these keep the tree-sitter highlight. Rule modifiers
-    /// and each `lsp.mod.<name>` the theme defines are layered on top.
+    /// by the theme's `lsp.type.<type>.<modifier>` or `lsp.type.<type>`, else the language's
+    /// `semantic-token-rules`, else its standard scope; tokens with none of these keep the
+    /// tree-sitter highlight. Rule modifiers and each `lsp.mod.<name>` the theme defines are
+    /// layered on top.
     pub fn doc_semantic_token_highlights_into(
         doc: &Document,
         anchor: usize,
@@ -368,17 +369,11 @@ impl EditorView {
                 .filter(|token| token.start < token.end)
         };
 
-        let type_highlights: Vec<_> = semantic_tokens
-            .type_scopes
-            .iter()
-            .map(|scope| theme.find_highlight_exact(scope))
-            .collect();
+        let mut scope = String::new();
         let highlights: Vec<_> = visible()
             .filter_map(|token| {
-                let highlight = type_highlights
-                    .get(token.token_type as usize)
-                    .copied()
-                    .flatten()
+                let highlight = semantic_tokens
+                    .type_highlight(token, theme, &mut scope)
                     .or(token.rule_fg)
                     .or_else(|| theme.find_highlight(token.scope?))?;
                 Some((highlight, token.start..token.end))
